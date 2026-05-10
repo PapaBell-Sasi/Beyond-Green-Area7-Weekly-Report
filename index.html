@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beyond Green — Sales Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, getDocs, query, where, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC9oKDJK6a4Rzqatws2JJlrLkBgM1mhcBM",
+  authDomain: "beyond-green-area-7-dashboard.firebaseapp.com",
+  projectId: "beyond-green-area-7-dashboard",
+  storageBucket: "beyond-green-area-7-dashboard.firebasestorage.app",
+  messagingSenderId: "761116107290",
+  appId: "1:761116107290:web:8f1042dbc0070054b7e7a3",
+  measurementId: "G-HEVRJS7WNS"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ── User → Branch / Role mapping ─────────────────────────────────────────────
+const USER_MAP = {
+  "sittinan@beyond-green.co.th":    { branch: "ภูเก็ต",   role: "branch" },
+  "natthareeya@beyond-green.co.th": { branch: "ภูเก็ต",   role: "region" },
+  "narinthorn@beyond-green.co.th":  { branch: "สมุย",     role: "branch" },
+  "suthee.p@beyond-green.co.th":    { branch: "กระบี่",   role: "branch" },
+  "pongganin@beyond-green.co.th":   { branch: "หาดใหญ่",  role: "branch" },
+  "prachya@beyond-green.co.th":     { branch: "หาดใหญ่",  role: "branch" },
+};
+
+const BRANCHES = ["ภูเก็ต", "สมุย", "กระบี่", "หาดใหญ่"];
+const BRANCH_COLORS = { "ภูเก็ต":"#1a6b3c", "สมุย":"#1a5fa8", "กระบี่":"#c97a00", "หาดใหญ่":"#534ab7" };
+let charts = {};
+
+// ── Auth state ────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, user => {
+  if (user) {
+    const info = USER_MAP[user.email];
+    if (!info) { signOut(auth); showToast("ไม่พบสิทธิ์ผู้ใช้นี้", "error"); return; }
+    window._user = user;
+    window._branch = info.branch;
+    window._role = info.role;
+    showApp(user, info);
+  } else {
+    showLogin();
+  }
+});
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+window.doLogin = async () => {
+  const email = document.getElementById("l-email").value.trim();
+  const pass  = document.getElementById("l-pass").value;
+  const btn   = document.getElementById("l-btn");
+  if (!email || !pass) return;
+  btn.disabled = true;
+  btn.textContent = "กำลังเข้าสู่ระบบ...";
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    showToast("Email หรือ Password ไม่ถูกต้อง", "error");
+    btn.disabled = false;
+    btn.textContent = "เข้าสู่ระบบ";
+  }
+};
+
+window.doLogout = async () => {
+  await signOut(auth);
+};
+
+// ── Show App ──────────────────────────────────────────────────────────────────
+function showApp(user, info) {
+  document.getElementById("pg-login").style.display = "none";
+  document.getElementById("pg-app").style.display = "grid";
+  document.getElementById("user-name").textContent = user.email.split("@")[0];
+  document.getElementById("user-branch").textContent = info.branch;
+  document.getElementById("user-role").textContent = info.role === "region" ? "ผู้จัดการเขต" : "สาขา";
+
+  // Build nav based on role
+  const nav = document.getElementById("sidebar-nav");
+  nav.innerHTML = "";
+  const pages = info.role === "region"
+    ? [["overview","▦","ภาพรวมเขต"],["branch-compare","◈","เปรียบเทียบสาขา"],["weekly-list","☰","รายงานสัปดาห์"],["add-report","✎","เพิ่มรายงาน"]]
+    : [["my-dashboard","▦","Dashboard สาขา"],["add-report","✎","กรอกรายงาน"],["weekly-list","☰","ประวัติรายงาน"]];
+  pages.forEach(([id,icon,label]) => {
+    const el = document.createElement("div");
+    el.className = "nav-item";
+    el.dataset.page = id;
+    el.innerHTML = `<span class="nav-icon">${icon}</span>${label}`;
+    el.onclick = () => gotoPage(id);
+    nav.appendChild(el);
+  });
+
+  if (info.role === "region") gotoPage("overview");
+  else gotoPage("my-dashboard");
+}
+
+function showLogin() {
+  document.getElementById("pg-login").style.display = "flex";
+  document.getElementById("pg-app").style.display = "none";
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function gotoPage(id) {
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("on", el.dataset.page === id));
+  document.querySelectorAll(".page-content").forEach(p => p.classList.remove("on"));
+  const pg = document.getElementById("pg-" + id);
+  if (pg) {
+    pg.classList.add("on");
+    if (id === "overview") loadOverview();
+    else if (id === "my-dashboard") loadMyDashboard();
+    else if (id === "weekly-list") loadWeeklyList();
+    else if (id === "branch-compare") loadBranchCompare();
+    else if (id === "add-report") setupForm();
+  }
+}
+
+// ── Save Report ───────────────────────────────────────────────────────────────
+window.saveReport = async () => {
+  const btn = document.getElementById("save-btn");
+  btn.disabled = true;
+  btn.textContent = "กำลังบันทึก...";
+
+  const leads = [];
+  document.querySelectorAll(".lead-row").forEach(row => {
+    const name  = row.querySelector(".l-name").value.trim();
+    const group = row.querySelector(".l-group").value;
+    const model = row.querySelector(".l-model").value.trim();
+    const qty   = parseInt(row.querySelector(".l-qty").value) || 0;
+    const price = parseFloat(row.querySelector(".l-price").value.replace(/,/g,"")) || 0;
+    const chance= parseInt(row.querySelector(".l-chance").value) || 0;
+    const type  = row.querySelector(".l-type").value;
+    if (name) leads.push({ name, group, model, qty, price, chance, type });
+  });
+
+  const report = {
+    branch:    window._branch,
+    userEmail: window._user.email,
+    weekLabel: document.getElementById("f-week").value.trim(),
+    poCount:   parseInt(document.getElementById("f-po").value) || 0,
+    newLeads:  leads.length,
+    summary:   document.getElementById("f-summary").value.trim(),
+    leads,
+    createdAt: serverTimestamp(),
+  };
+
+  if (!report.weekLabel) { showToast("กรุณาระบุสัปดาห์ครับ","error"); btn.disabled=false; btn.textContent="บันทึกรายงาน"; return; }
+
+  try {
+    await addDoc(collection(db, "reports"), report);
+    showToast("บันทึกรายงานสำเร็จแล้วครับ! ✓", "ok");
+    document.getElementById("report-form").reset();
+    document.getElementById("leads-container").innerHTML = "";
+    addLeadRow();
+    btn.disabled = false;
+    btn.textContent = "บันทึกรายงาน";
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+    btn.disabled = false;
+    btn.textContent = "บันทึกรายงาน";
+  }
+};
+
+// ── Lead rows ─────────────────────────────────────────────────────────────────
+window.addLeadRow = () => {
+  const container = document.getElementById("leads-container");
+  const idx = container.children.length + 1;
+  const div = document.createElement("div");
+  div.className = "lead-row";
+  div.innerHTML = `
+    <div class="lead-row-head">
+      <span class="lead-num">${idx}</span>
+      <button class="btn-remove" onclick="this.closest('.lead-row').remove()">✕</button>
+    </div>
+    <div class="lead-fields">
+      <input class="finp l-name" placeholder="ชื่อลูกค้า/องค์กร *">
+      <select class="finp l-group">
+        <option value="โรงพยาบาล">โรงพยาบาล</option>
+        <option value="รีสอร์ท">รีสอร์ท</option>
+        <option value="โรงแรม">โรงแรม</option>
+        <option value="มหาวิทยาลัย">มหาวิทยาลัย</option>
+        <option value="ท่าอากาศยาน">ท่าอากาศยาน</option>
+        <option value="โครงการหมู่บ้าน">โครงการหมู่บ้าน</option>
+        <option value="สถานที่ท่องเที่ยว">สถานที่ท่องเที่ยว</option>
+        <option value="อื่นๆ">อื่นๆ</option>
+      </select>
+      <input class="finp l-model" placeholder="รุ่นรถที่สนใจ">
+      <input class="finp l-qty" type="number" placeholder="จำนวน (คัน)" min="0">
+      <input class="finp l-price" placeholder="มูลค่า (บาท)">
+      <input class="finp l-chance" type="number" placeholder="โอกาส %" min="0" max="100">
+      <select class="finp l-type">
+        <option value="ขาย">ขาย</option>
+        <option value="เช่า">เช่า</option>
+      </select>
+    </div>`;
+  container.appendChild(div);
+};
+
+function setupForm() {
+  const container = document.getElementById("leads-container");
+  if (!container.children.length) addLeadRow();
+}
+
+// ── Load My Dashboard ─────────────────────────────────────────────────────────
+async function loadMyDashboard() {
+  const branch = window._branch;
+  document.getElementById("my-branch-name").textContent = branch;
+
+  const q = query(collection(db,"reports"), where("branch","==",branch), orderBy("createdAt","desc"));
+  const snap = await getDocs(q);
+  const reports = snap.docs.map(d => ({id:d.id,...d.data()}));
+
+  const totalLeads = reports.reduce((s,r)=>s+(r.newLeads||0),0);
+  const totalPO    = reports.reduce((s,r)=>s+(r.poCount||0),0);
+  const totalVal   = reports.reduce((s,r)=>s+(r.leads||[]).reduce((ss,l)=>ss+(l.price||0),0),0);
+  const lastReport = reports[0];
+
+  document.getElementById("my-kpi-weeks").textContent = reports.length;
+  document.getElementById("my-kpi-leads").textContent = totalLeads;
+  document.getElementById("my-kpi-po").textContent    = totalPO;
+  document.getElementById("my-kpi-val").textContent   = totalVal >= 1000000 ? "฿"+(totalVal/1000000).toFixed(1)+"M" : "฿"+Math.round(totalVal/1000)+"K";
+
+  // Chart: leads per week
+  mkChart("ch-my-weekly","bar",{
+    labels: [...reports].reverse().map(r=>r.weekLabel||""),
+    datasets:[
+      {label:"Lead",data:[...reports].reverse().map(r=>r.newLeads||0),backgroundColor:"#1a6b3c",borderRadius:4},
+      {label:"PO", data:[...reports].reverse().map(r=>r.poCount||0), backgroundColor:"#22a85a",borderRadius:4}
+    ]
+  });
+
+  // Last week opportunities
+  const oppEl = document.getElementById("my-opp-table");
+  if (!lastReport || !(lastReport.leads||[]).filter(l=>l.chance>=50).length) {
+    oppEl.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลครับ</div>';
+  } else {
+    const opps = lastReport.leads.filter(l=>l.chance>=50).sort((a,b)=>b.chance-a.chance);
+    oppEl.innerHTML = renderOppTable(opps);
+  }
+
+  // Recent reports list
+  const listEl = document.getElementById("my-recent-list");
+  listEl.innerHTML = reports.slice(0,5).map(r => `
+    <div class="report-card">
+      <div class="rc-head">
+        <strong>${r.weekLabel||"(ไม่ระบุ)"}</strong>
+        <div class="chip-row">
+          <span class="badge bb">Lead ${r.newLeads||0}</span>
+          <span class="badge bg">PO ${r.poCount||0}</span>
+        </div>
+      </div>
+      ${r.summary?`<div class="rc-summary">${r.summary}</div>`:""}
+    </div>`).join("") || '<div class="empty-state">ยังไม่มีรายงานครับ</div>';
+}
+
+// ── Load Overview (Region) ────────────────────────────────────────────────────
+async function loadOverview() {
+  const snap = await getDocs(query(collection(db,"reports"), orderBy("createdAt","desc")));
+  const all  = snap.docs.map(d => ({id:d.id,...d.data()}));
+
+  // KPI per branch
+  const branchData = {};
+  BRANCHES.forEach(b => {
+    const rpts = all.filter(r=>r.branch===b);
+    const leads = rpts.reduce((s,r)=>s+(r.newLeads||0),0);
+    const po    = rpts.reduce((s,r)=>s+(r.poCount||0),0);
+    const val   = rpts.reduce((s,r)=>s+(r.leads||[]).reduce((ss,l)=>ss+(l.price||0),0),0);
+    branchData[b] = { rpts, leads, po, val };
+  });
+
+  const totalLeads = Object.values(branchData).reduce((s,d)=>s+d.leads,0);
+  const totalPO    = Object.values(branchData).reduce((s,d)=>s+d.po,0);
+  const totalVal   = Object.values(branchData).reduce((s,d)=>s+d.val,0);
+  const totalRpts  = all.length;
+
+  document.getElementById("ov-kpi-rpts").textContent  = totalRpts;
+  document.getElementById("ov-kpi-leads").textContent = totalLeads;
+  document.getElementById("ov-kpi-po").textContent    = totalPO;
+  document.getElementById("ov-kpi-val").textContent   = totalVal>=1000000?"฿"+(totalVal/1000000).toFixed(1)+"M":"฿"+Math.round(totalVal/1000)+"K";
+
+  // Branch KPI cards
+  const cardEl = document.getElementById("ov-branch-cards");
+  cardEl.innerHTML = BRANCHES.map(b => {
+    const d = branchData[b];
+    const lastW = d.rpts[0];
+    return `<div class="branch-card">
+      <div class="bc-top">
+        <div class="bc-name">${b}</div>
+        <div class="bc-rpts">${d.rpts.length} สัปดาห์</div>
+      </div>
+      <div class="bc-kpis">
+        <div><div class="bc-kv">${d.leads}</div><div class="bc-kl">Lead</div></div>
+        <div><div class="bc-kv g">${d.po}</div><div class="bc-kl">PO</div></div>
+        <div><div class="bc-kv b">${d.val>=1000000?"฿"+(d.val/1000000).toFixed(1)+"M":"฿"+Math.round(d.val/1000)+"K"}</div><div class="bc-kl">มูลค่า</div></div>
+      </div>
+      ${lastW?`<div class="bc-last">ล่าสุด: ${lastW.weekLabel||"—"}</div>`:"<div class=\"bc-last\">ยังไม่มีรายงาน</div>"}
+    </div>`;
+  }).join("");
+
+  // Chart: leads by branch
+  mkChart("ch-ov-branch","bar",{
+    labels: BRANCHES,
+    datasets:[
+      {label:"Lead",data:BRANCHES.map(b=>branchData[b].leads),backgroundColor:BRANCHES.map(b=>BRANCH_COLORS[b]),borderRadius:6}
+    ]
+  });
+
+  // Chart: PO by branch
+  mkChart("ch-ov-po","bar",{
+    labels: BRANCHES,
+    datasets:[
+      {label:"PO",data:BRANCHES.map(b=>branchData[b].po),backgroundColor:BRANCHES.map(b=>BRANCH_COLORS[b]+"cc"),borderRadius:6}
+    ]
+  });
+
+  // All opportunities this week (latest per branch)
+  const oppRows = [];
+  BRANCHES.forEach(b => {
+    const last = branchData[b].rpts[0];
+    if (last) (last.leads||[]).filter(l=>l.chance>=60).forEach(l=>oppRows.push({...l,branch:b}));
+  });
+  const oppEl = document.getElementById("ov-opp-table");
+  oppEl.innerHTML = oppRows.length
+    ? `<table class="dt"><thead><tr><th>สาขา</th><th>ลูกค้า</th><th>กลุ่ม</th><th>รุ่นรถ</th><th>จำนวน</th><th>มูลค่า</th><th>โอกาส</th></tr></thead><tbody>
+    ${oppRows.sort((a,b)=>b.chance-a.chance).map(o=>`<tr>
+      <td><span class="badge" style="background:${BRANCH_COLORS[o.branch]}22;color:${BRANCH_COLORS[o.branch]}">${o.branch}</span></td>
+      <td><strong>${o.name}</strong></td>
+      <td><span class="badge bgr">${o.group||"-"}</span></td>
+      <td style="font-size:11px">${o.model||"-"}</td>
+      <td style="font-family:var(--mono);text-align:center">${o.qty?o.qty+" คัน":"-"}</td>
+      <td style="font-family:var(--mono);font-weight:600">฿${(o.price||0).toLocaleString()}</td>
+      <td><strong>${o.chance}%</strong><div class="prog"><div class="pf" style="width:${o.chance}%;background:${o.chance>=60?"#22a85a":"#c97a00"}"></div></div></td>
+    </tr>`).join("")}</tbody></table>`
+    : '<div class="empty-state">ยังไม่มีโอกาสสูงในสัปดาห์ล่าสุดครับ</div>';
+}
+
+// ── Load Branch Compare ───────────────────────────────────────────────────────
+async function loadBranchCompare() {
+  const snap = await getDocs(query(collection(db,"reports"), orderBy("createdAt","desc")));
+  const all  = snap.docs.map(d => ({id:d.id,...d.data()}));
+
+  // Collect all unique weekLabels
+  const weeks = [...new Set(all.map(r=>r.weekLabel))].slice(0,8).reverse();
+
+  // Dataset per branch per week
+  const datasets = BRANCHES.map(b => ({
+    label: b,
+    data: weeks.map(w => {
+      const r = all.find(x=>x.branch===b && x.weekLabel===w);
+      return r ? r.newLeads||0 : 0;
+    }),
+    backgroundColor: BRANCH_COLORS[b],
+    borderRadius: 4
+  }));
+
+  mkChart("ch-cmp-leads","bar",{labels:weeks, datasets});
+
+  // Group breakdown all branches
+  const groupMap = {};
+  all.forEach(r => (r.leads||[]).forEach(l => {
+    const g = l.group||"อื่นๆ";
+    groupMap[g] = (groupMap[g]||0)+1;
+  }));
+  const gKeys = Object.keys(groupMap).sort((a,b)=>groupMap[b]-groupMap[a]);
+  const gColors = ["#1a6b3c","#1a5fa8","#c97a00","#993c1d","#534ab7","#888780","#22a85a","#e24b4a"];
+  mkChart("ch-cmp-group","doughnut",{
+    labels: gKeys,
+    datasets:[{data:gKeys.map(k=>groupMap[k]),backgroundColor:gColors,borderWidth:0}]
+  },{cutout:"60%",scales:{}});
+
+  const legEl = document.getElementById("cmp-grp-leg");
+  legEl.innerHTML = gKeys.map((k,i)=>`<div class="li"><div class="ld" style="background:${gColors[i]}"></div>${k} (${groupMap[k]})</div>`).join("");
+}
+
+// ── Load Weekly List ──────────────────────────────────────────────────────────
+async function loadWeeklyList() {
+  const branch = window._branch;
+  const role   = window._role;
+  let q;
+  if (role === "region") {
+    q = query(collection(db,"reports"), orderBy("createdAt","desc"));
+  } else {
+    q = query(collection(db,"reports"), where("branch","==",branch), orderBy("createdAt","desc"));
+  }
+  const snap = await getDocs(q);
+  const reports = snap.docs.map(d=>({id:d.id,...d.data()}));
+
+  const el = document.getElementById("weekly-list-container");
+  el.innerHTML = reports.length
+    ? reports.map(r=>`
+      <div class="report-card expandable" onclick="toggleReport(this)">
+        <div class="rc-head">
+          <div>
+            ${role==="region"?`<span class="badge" style="background:${BRANCH_COLORS[r.branch]||"#888"}22;color:${BRANCH_COLORS[r.branch]||"#888"};margin-right:6px">${r.branch}</span>`:""}
+            <strong>${r.weekLabel||"(ไม่ระบุ)"}</strong>
+          </div>
+          <div class="chip-row">
+            <span class="badge bb">Lead ${r.newLeads||0}</span>
+            <span class="badge bg">PO ${r.poCount||0}</span>
+            <span class="badge ba">โอกาส ${(r.leads||[]).filter(l=>l.chance>=60).length}</span>
+          </div>
+        </div>
+        <div class="rc-detail" style="display:none">
+          ${r.summary?`<div class="rc-summary">${r.summary}</div>`:""}
+          ${(r.leads||[]).length?renderOppTable(r.leads):""}
+        </div>
+      </div>`).join("")
+    : '<div class="empty-state">ยังไม่มีรายงานครับ</div>';
+}
+
+window.toggleReport = (el) => {
+  const detail = el.querySelector(".rc-detail");
+  if (detail) detail.style.display = detail.style.display==="none" ? "block" : "none";
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function renderOppTable(leads) {
+  return `<table class="dt"><thead><tr><th>ลูกค้า</th><th>กลุ่ม</th><th>รุ่นรถ</th><th>จำนวน</th><th>ประเภท</th><th>มูลค่า</th><th>โอกาส</th></tr></thead><tbody>
+  ${leads.map(o=>`<tr>
+    <td><strong>${o.name}</strong></td>
+    <td><span class="badge bgr">${o.group||"-"}</span></td>
+    <td style="font-size:11px">${o.model||"-"}</td>
+    <td style="font-family:var(--mono);text-align:center">${o.qty?o.qty+" คัน":"-"}</td>
+    <td><span class="badge ${o.type==="เช่า"?"bb":"bg"}">${o.type||"ขาย"}</span></td>
+    <td style="font-family:var(--mono);font-weight:600">฿${(o.price||0).toLocaleString()}</td>
+    <td><strong>${o.chance||0}%</strong><div class="prog"><div class="pf" style="width:${o.chance||0}%;background:${(o.chance||0)>=60?"#22a85a":"#c97a00"}"></div></div></td>
+  </tr>`).join("")}</tbody></table>`;
+}
+
+function mkChart(id,type,data,opts={}) {
+  if (charts[id]) charts[id].destroy();
+  const el = document.getElementById(id);
+  if (!el) return;
+  const fc = "#888";
+  charts[id] = new Chart(el, {type, data, options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{font:{size:10},color:fc},grid:{display:false}},
+      y:{ticks:{font:{size:10},color:fc},grid:{color:"rgba(0,0,0,.06)"}}
+    },
+    ...opts
+  }});
+}
+
+window.showToast = (msg, type="ok") => {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => t.className = "toast", 3000);
+};
+
+// Enter key login
+document.getElementById("l-pass").addEventListener("keydown", e => { if(e.key==="Enter") doLogin(); });
+</script>
+
+<style>
+:root{
+  --g:#1a6b3c;--g2:#22a85a;--g3:#d4edda;
+  --b:#1a5fa8;--b2:#e8f1fb;
+  --a:#c97a00;--a2:#fff3cd;
+  --r:#c0392b;--r2:#fdecea;
+  --p:#534ab7;--p2:#eeedfe;
+  --bg:#f4f6f3;--sf:#fff;--bd:#e2e6e0;
+  --tx:#1a1f1a;--mt:#6b736b;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Sarabun',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:14px}
+
+/* ── Login ── */
+#pg-login{display:flex;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d3d20 0%,#1a6b3c 50%,#0a2d16 100%)}
+.login-box{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-text{font-size:22px;font-weight:700;color:var(--g);letter-spacing:-.3px}
+.login-logo-sub{font-size:12px;color:var(--mt);margin-top:2px}
+.login-label{font-size:12px;font-weight:600;color:var(--mt);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.login-input{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:10px 13px;font-family:var(--sans);font-size:14px;color:var(--tx);margin-bottom:14px;outline:none;transition:border-color .15s}
+.login-input:focus{border-color:var(--g2)}
+.login-btn{width:100%;background:var(--g);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:4px}
+.login-btn:hover{background:#145530}
+.login-btn:disabled{background:#aaa;cursor:not-allowed}
+.login-footer{text-align:center;font-size:11px;color:var(--mt);margin-top:18px}
+
+/* ── App Shell ── */
+#pg-app{display:none;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--g);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-logo{padding:20px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sb-logo-title{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.sb-logo-sub{font-size:10px;opacity:.5;font-family:var(--mono);margin-top:1px}
+.sb-user{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.15)}
+.sb-user-name{font-size:13px;font-weight:600}
+.sb-user-info{font-size:10px;opacity:.65;margin-top:2px}
+.nav-sec{padding:16px 14px 5px;font-size:9px;font-weight:700;letter-spacing:.12em;opacity:.4;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;margin:1px 8px;border-radius:8px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.75);transition:background .12s}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.on{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
+.nav-icon{width:16px;text-align:center;font-size:13px}
+.sb-foot{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.logout-btn{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);padding:7px 14px;border-radius:7px;font-family:var(--sans);font-size:12px;cursor:pointer;width:100%;transition:background .12s}
+.logout-btn:hover{background:rgba(255,255,255,.2)}
+.main-content{padding:26px 30px;overflow-x:hidden}
+.page-content{display:none}.page-content.on{display:block}
+.ph{margin-bottom:20px}
+.ph-title{font-size:19px;font-weight:700;letter-spacing:-.3px}
+.ph-sub{font-size:12px;color:var(--mt);margin-top:3px}
+
+/* ── KPI ── */
+.kpi-grid{display:grid;gap:10px;margin-bottom:18px}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpi{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10px;color:var(--mt);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.kpi-v{font-size:24px;font-weight:700;letter-spacing:-.5px;font-family:var(--mono)}
+.kpi-v.g{color:var(--g2)}.kpi-v.b{color:var(--b)}.kpi-v.a{color:var(--a)}.kpi-v.p{color:var(--p)}
+.kpi-foot{font-size:11px;color:var(--mt);margin-top:3px}
+
+/* ── Chart cards ── */
+.chart-row{display:grid;gap:12px;margin-bottom:12px}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}
+.cc{background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:16px 18px;margin-bottom:12px}
+.cc-title{font-size:11px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.leg{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.li{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mt)}
+.ld{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+/* ── Branch cards ── */
+.branch-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.branch-card{background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:16px;transition:box-shadow .15s}
+.branch-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.bc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.bc-name{font-size:15px;font-weight:700}
+.bc-rpts{font-size:10px;color:var(--mt);font-family:var(--mono)}
+.bc-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.bc-kpis>div{text-align:center}
+.bc-kv{font-size:18px;font-weight:700;font-family:var(--mono)}
+.bc-kv.g{color:var(--g2)}.bc-kv.b{color:var(--b)}
+.bc-kl{font-size:10px;color:var(--mt)}
+.bc-last{font-size:11px;color:var(--mt);border-top:1px solid var(--bd);padding-top:8px;font-family:var(--mono)}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:500;white-space:nowrap}
+.bg{background:var(--g3);color:var(--g)}.ba{background:var(--a2);color:var(--a)}.bb{background:var(--b2);color:var(--b)}.br{background:var(--r2);color:var(--r)}.bp{background:var(--p2);color:var(--p)}.bgr{background:#f0f0ee;color:#555}
+
+/* ── Table ── */
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{text-align:left;padding:7px 10px;color:var(--mt);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd)}
+.dt td{padding:8px 10px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.dt tr:last-child td{border-bottom:none}
+.dt tr:hover td{background:var(--bg)}
+.prog{background:#e8ebe8;border-radius:3px;height:5px;margin-top:4px;overflow:hidden;min-width:60px}
+.pf{height:100%;border-radius:3px}
+
+/* ── Form ── */
+.form-section{background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:20px;margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:var(--mt);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.finp{width:100%;border:1.5px solid var(--bd);border-radius:7px;padding:8px 11px;font-family:var(--sans);font-size:13px;color:var(--tx);background:var(--bg);outline:none;transition:border-color .15s}
+.finp:focus{border-color:var(--g2);background:#fff}
+.lead-row{background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:14px;margin-bottom:10px}
+.lead-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.lead-num{font-size:12px;font-weight:700;color:var(--mt);font-family:var(--mono)}
+.lead-fields{display:grid;grid-template-columns:2fr 1fr 1.5fr 0.8fr 1fr 0.8fr 0.8fr;gap:8px}
+.btn-remove{background:var(--r2);color:var(--r);border:none;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .13s}
+.btn-p{background:var(--g);color:#fff}.btn-p:hover{background:#145530}.btn-p:disabled{background:#aaa;cursor:not-allowed}
+.btn-s{background:var(--sf);border:1px solid var(--bd);color:var(--tx)}.btn-s:hover{background:var(--bg)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* ── Report Cards ── */
+.report-card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .12s}
+.report-card:hover{border-color:var(--g2)}
+.rc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.rc-summary{font-size:12px;color:var(--mt);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)}
+.rc-detail{margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap}
+.empty-state{text-align:center;padding:32px;color:var(--mt);font-size:13px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#1a1f1a;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:var(--g)}
+.toast.error{background:var(--r)}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ────────────────────────────────────────────────────────────────── -->
+<div id="pg-login">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-text">Beyond Green</div>
+      <div class="login-logo-sub">Area 7 Sales Dashboard</div>
+    </div>
+    <label class="login-label">Email</label>
+    <input class="login-input" id="l-email" type="email" placeholder="yourname@beyond-green.co.th" autocomplete="email">
+    <label class="login-label">Password</label>
+    <input class="login-input" id="l-pass" type="password" placeholder="รหัสผ่าน">
+    <button class="login-btn" id="l-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-footer">Beyond Green Co., Ltd. · Area 7</div>
+  </div>
+</div>
+
+<!-- ── APP ──────────────────────────────────────────────────────────────────── -->
+<div id="pg-app">
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-title">Beyond Green</div>
+      <div class="sb-logo-sub">Area 7 Dashboard</div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-user-name" id="user-name"></div>
+      <div class="sb-user-info"><span id="user-branch"></span> · <span id="user-role"></span></div>
+    </div>
+    <div id="sidebar-nav"></div>
+    <div class="sb-foot">
+      <button class="logout-btn" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- OVERVIEW (Region) -->
+    <div id="pg-overview" class="page-content">
+      <div class="ph"><div class="ph-title">ภาพรวมเขต 7</div><div class="ph-sub">รวมทุกสาขา · ข้อมูล Real-time</div></div>
+      <div class="kpi-grid g4">
+        <div class="kpi"><div class="kpi-label">รายงานทั้งหมด</div><div class="kpi-v p" id="ov-kpi-rpts">—</div><div class="kpi-foot">สัปดาห์สะสม</div></div>
+        <div class="kpi"><div class="kpi-label">Lead สะสม</div><div class="kpi-v" id="ov-kpi-leads">—</div><div class="kpi-foot">ทุกสาขา</div></div>
+        <div class="kpi"><div class="kpi-label">PO สะสม</div><div class="kpi-v g" id="ov-kpi-po">—</div><div class="kpi-foot">ทุกสาขา</div></div>
+        <div class="kpi"><div class="kpi-label">มูลค่าโอกาสรวม</div><div class="kpi-v a" id="ov-kpi-val">—</div><div class="kpi-foot">บาท</div></div>
+      </div>
+      <div class="branch-grid" id="ov-branch-cards"></div>
+      <div class="chart-row c2">
+        <div class="cc"><div class="cc-title">Lead รายสาขา</div><div style="position:relative;height:200px"><canvas id="ch-ov-branch" role="img" aria-label="Lead รายสาขา">Lead รายสาขา</canvas></div></div>
+        <div class="cc"><div class="cc-title">PO รายสาขา</div><div style="position:relative;height:200px"><canvas id="ch-ov-po" role="img" aria-label="PO รายสาขา">PO รายสาขา</canvas></div></div>
+      </div>
+      <div class="cc"><div class="cc-title">โอกาสปิดการขาย ≥60% (สัปดาห์ล่าสุดแต่ละสาขา)</div><div id="ov-opp-table"></div></div>
+    </div>
+
+    <!-- BRANCH COMPARE (Region) -->
+    <div id="pg-branch-compare" class="page-content">
+      <div class="ph"><div class="ph-title">เปรียบเทียบสาขา</div><div class="ph-sub">Lead รายสัปดาห์แยกสาขา</div></div>
+      <div class="cc"><div class="cc-title">Lead ใหม่รายสัปดาห์ (แยกสาขา)</div><div style="position:relative;height:260px"><canvas id="ch-cmp-leads" role="img" aria-label="Lead เปรียบเทียบสาขา">Lead เปรียบเทียบ</canvas></div></div>
+      <div class="cc"><div class="cc-title">กลุ่มลูกค้า (รวมทุกสาขา)</div><div class="leg" id="cmp-grp-leg"></div><div style="position:relative;height:220px"><canvas id="ch-cmp-group" role="img" aria-label="กลุ่มลูกค้า">กลุ่ม</canvas></div></div>
+    </div>
+
+    <!-- MY DASHBOARD (Branch) -->
+    <div id="pg-my-dashboard" class="page-content">
+      <div class="ph"><div class="ph-title">Dashboard สาขา<span id="my-branch-name" style="color:var(--g2);margin-left:8px"></span></div><div class="ph-sub">ข้อมูลของสาขาคุณ</div></div>
+      <div class="kpi-grid g4">
+        <div class="kpi"><div class="kpi-label">รายงานทั้งหมด</div><div class="kpi-v p" id="my-kpi-weeks">—</div></div>
+        <div class="kpi"><div class="kpi-label">Lead สะสม</div><div class="kpi-v" id="my-kpi-leads">—</div></div>
+        <div class="kpi"><div class="kpi-label">PO สะสม</div><div class="kpi-v g" id="my-kpi-po">—</div></div>
+        <div class="kpi"><div class="kpi-label">มูลค่ารวม</div><div class="kpi-v a" id="my-kpi-val">—</div></div>
+      </div>
+      <div class="chart-row c2">
+        <div class="cc"><div class="cc-title">Lead & PO รายสัปดาห์</div><div class="leg"><div class="li"><div class="ld" style="background:#1a6b3c"></div>Lead</div><div class="li"><div class="ld" style="background:#22a85a"></div>PO</div></div><div style="position:relative;height:190px"><canvas id="ch-my-weekly" role="img" aria-label="Lead PO รายสัปดาห์">Lead weekly</canvas></div></div>
+        <div class="cc"><div class="cc-title">รายงานล่าสุด</div><div id="my-recent-list"></div></div>
+      </div>
+      <div class="cc"><div class="cc-title">โอกาสปิดการขาย (สัปดาห์ล่าสุด)</div><div id="my-opp-table"></div></div>
+    </div>
+
+    <!-- ADD REPORT (Branch + Region) -->
+    <div id="pg-add-report" class="page-content">
+      <div class="ph"><div class="ph-title">กรอกรายงานสัปดาห์</div><div class="ph-sub">ข้อมูลจะบันทึกขึ้น Cloud ทันที</div></div>
+      <form id="report-form" onsubmit="return false">
+        <div class="form-section">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div>
+              <label class="form-label">สัปดาห์ *</label>
+              <input class="finp" id="f-week" placeholder="เช่น 6–10 เมษายน 2569">
+            </div>
+            <div>
+              <label class="form-label">PO ที่ได้รับสัปดาห์นี้</label>
+              <input class="finp" id="f-po" type="number" min="0" placeholder="จำนวน PO">
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <label class="form-label">สรุปภาพรวม</label>
+            <textarea class="finp" id="f-summary" rows="3" placeholder="สรุปกิจกรรมสำคัญสัปดาห์นี้..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:600">Lead / ลูกค้าที่เข้าพบสัปดาห์นี้</div>
+            <button type="button" class="btn btn-s" onclick="addLeadRow()">+ เพิ่ม Lead</button>
+          </div>
+          <div style="font-size:11px;color:var(--mt);margin-bottom:10px;display:grid;grid-template-columns:2fr 1fr 1.5fr 0.8fr 1fr 0.8fr 0.8fr;gap:8px;padding:0 14px">
+            <span>ชื่อลูกค้า</span><span>กลุ่ม</span><span>รุ่นรถ</span><span>จำนวนคัน</span><span>มูลค่า(บาท)</span><span>โอกาส%</span><span>ประเภท</span>
+          </div>
+          <div id="leads-container"></div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-p" id="save-btn" onclick="saveReport()">บันทึกรายงาน</button>
+          <button type="reset" class="btn btn-s">ล้างฟอร์ม</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- WEEKLY LIST -->
+    <div id="pg-weekly-list" class="page-content">
+      <div class="ph"><div class="ph-title">ประวัติรายงาน</div><div class="ph-sub">คลิกเพื่อดูรายละเอียด</div></div>
+      <div id="weekly-list-container"><div class="empty-state">กำลังโหลด...</div></div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+</body>
+</html>
