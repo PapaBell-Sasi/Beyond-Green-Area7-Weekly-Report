@@ -1,492 +1,955 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beyond Green Area 7 - Weekly Report</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Prompt -->
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B-Green รายงานประจำสัปดาห์</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-dark: #1a3a2a;
+    --green-mid: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #b7e4c7;
+    --gold: #e9c46a;
+    --gold-dark: #c9a84c;
+    --cream: #f8f4e8;
+    --white: #ffffff;
+    --gray-light: #f0f0ec;
+    --gray: #8a8a80;
+    --text-dark: #1a1a18;
+    --text-mid: #3a3a35;
+    --danger: #c0392b;
+    --danger-light: #fde8e6;
+    --shadow: 0 4px 24px rgba(26,58,42,0.10);
+    --shadow-lg: 0 8px 40px rgba(26,58,42,0.16);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Prompt', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                            900: '#064e3b',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { background-color: #f3f4f6; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s ease;
-        }
-        .glass-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .icon-bg-glow {
-            position: relative;
-        }
-        .icon-bg-glow::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 120%;
-            height: 120%;
-            background: currentColor;
-            opacity: 0.15;
-            border-radius: 50%;
-            filter: blur(8px);
-            z-index: 0;
-        }
-        .icon-bg-glow i { position: relative; z-index: 1; }
-        
-        /* ซ่อน Scrollbar สำหรับ Sidebar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--cream);
+    color: var(--text-dark);
+    min-height: 100vh;
+  }
+
+  /* ─── LOGIN SCREEN ─── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, var(--green-dark) 0%, var(--green-mid) 60%, var(--green-light) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  #login-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .login-box {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 48px 44px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.5s ease;
+  }
+  .login-logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .login-logo .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--green-mid), var(--green-light));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .logo-text { font-size: 26px; font-weight: 700; color: var(--green-dark); letter-spacing: -0.5px; }
+  .login-subtitle { font-size: 13px; color: var(--gray); letter-spacing: 0.5px; }
+  .login-title { font-size: 17px; font-weight: 600; color: var(--text-mid); margin-top: 4px; }
+
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-mid); margin-bottom: 6px; }
+  .form-group input {
+    width: 100%; padding: 12px 16px;
+    border: 1.5px solid #e0e0d8; border-radius: var(--radius-sm);
+    font-family: 'Sarabun', sans-serif; font-size: 15px; color: var(--text-dark);
+    background: var(--gray-light);
+    outline: none; transition: all 0.2s;
+  }
+  .form-group input:focus { border-color: var(--green-light); background: var(--white); box-shadow: 0 0 0 3px rgba(82,183,136,0.15); }
+
+  .btn-login {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--green-mid), var(--green-light));
+    color: var(--white); border: none; border-radius: var(--radius-sm);
+    font-family: 'Sarabun', sans-serif; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; margin-top: 8px;
+    letter-spacing: 0.3px;
+  }
+  .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(45,106,79,0.35); }
+  .btn-login:active { transform: none; }
+
+  .login-error {
+    background: var(--danger-light); color: var(--danger);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    font-size: 13px; font-weight: 500; margin-top: 12px;
+    display: none;
+  }
+
+  /* ─── APP LAYOUT ─── */
+  #app { display: none; min-height: 100vh; }
+
+  .topbar {
+    background: var(--green-dark);
+    color: var(--white);
+    padding: 0 32px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .topbar-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.2); }
+  .topbar-page { font-size: 14px; color: var(--green-pale); font-weight: 500; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .user-badge {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: rgba(255,255,255,0.85);
+  }
+  .user-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--green-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: var(--green-dark);
+  }
+  .btn-logout {
+    padding: 6px 14px; background: rgba(255,255,255,0.12);
+    color: var(--white); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px; font-family: 'Sarabun', sans-serif;
+    font-size: 13px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.22); }
+
+  /* ─── NAV TABS ─── */
+  .nav-bar {
+    background: var(--white);
+    border-bottom: 1px solid #e8e8e0;
+    padding: 0 32px;
+    display: flex; gap: 4px;
+    overflow-x: auto;
+  }
+  .nav-tab {
+    padding: 14px 18px; font-size: 14px; font-weight: 500;
+    color: var(--gray); border: none; background: none;
+    cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s; font-family: 'Sarabun', sans-serif;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-tab:hover { color: var(--green-mid); }
+  .nav-tab.active { color: var(--green-mid); border-bottom-color: var(--green-mid); font-weight: 600; }
+
+  /* ─── MAIN CONTENT ─── */
+  .main-content { padding: 28px 32px; max-width: 1100px; margin: 0 auto; }
+
+  /* ─── FORM CARD ─── */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .card-header {
+    padding: 20px 24px; border-bottom: 1px solid #f0f0ea;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--green-dark); }
+  .card-subtitle { font-size: 13px; color: var(--gray); margin-top: 2px; }
+  .card-body { padding: 24px; }
+
+  .week-selector {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .week-selector label { font-size: 14px; font-weight: 600; color: var(--text-mid); white-space: nowrap; }
+  .week-selector input[type="date"] {
+    padding: 9px 14px; border: 1.5px solid #e0e0d8;
+    border-radius: var(--radius-sm); font-family: 'Sarabun', sans-serif;
+    font-size: 14px; color: var(--text-dark); background: var(--gray-light);
+    outline: none; cursor: pointer;
+  }
+  .week-selector input[type="date"]:focus { border-color: var(--green-light); background: var(--white); }
+
+  /* ─── REPORT TABLE ─── */
+  .report-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .section-label {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--green-mid);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--green-pale); }
+
+  .fields-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;
+  }
+
+  .field-item label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--text-mid); margin-bottom: 5px;
+  }
+  .field-item input, .field-item textarea, .field-item select {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid #e0e0d8; border-radius: var(--radius-sm);
+    font-family: 'Sarabun', sans-serif; font-size: 14px; color: var(--text-dark);
+    background: var(--gray-light); outline: none; transition: all 0.2s;
+  }
+  .field-item input:focus, .field-item textarea:focus, .field-item select:focus {
+    border-color: var(--green-light); background: var(--white);
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.12);
+  }
+  .field-item textarea { resize: vertical; min-height: 80px; }
+  .field-item.full { grid-column: 1 / -1; }
+
+  .unit-input { position: relative; }
+  .unit-input input { padding-right: 40px; }
+  .unit-label {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 12px; color: var(--gray); font-family: 'IBM Plex Mono', monospace;
+    pointer-events: none;
+  }
+
+  .btn-submit {
+    padding: 13px 32px;
+    background: linear-gradient(135deg, var(--green-mid), var(--green-light));
+    color: var(--white); border: none; border-radius: var(--radius-sm);
+    font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+  }
+  .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(45,106,79,0.3); }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .submit-status {
+    padding: 12px 16px; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500; margin-top: 16px; display: none;
+  }
+  .submit-status.success { background: #e8f5e9; color: #2e7d32; }
+  .submit-status.error { background: var(--danger-light); color: var(--danger); }
+  .submit-status.loading { background: #e3f2fd; color: #1565c0; }
+
+  /* ─── DASHBOARD (MANAGER VIEW) ─── */
+  .summary-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px 22px;
+    border-left: 4px solid var(--green-light);
+  }
+  .summary-card.gold { border-left-color: var(--gold); }
+  .summary-card.danger { border-left-color: var(--danger); }
+  .summary-card-label { font-size: 12px; color: var(--gray); font-weight: 500; margin-bottom: 6px; }
+  .summary-card-value { font-size: 26px; font-weight: 700; color: var(--green-dark); font-family: 'IBM Plex Mono', monospace; }
+  .summary-card-unit { font-size: 13px; color: var(--gray); margin-left: 4px; }
+  .summary-card-sub { font-size: 12px; color: var(--green-mid); margin-top: 4px; font-weight: 500; }
+
+  /* ─── BRANCH STATUS TABLE ─── */
+  .branch-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+  .branch-table th {
+    background: var(--green-dark); color: var(--white);
+    padding: 12px 16px; font-weight: 600; font-size: 12px;
+    letter-spacing: 0.5px; text-align: left;
+  }
+  .branch-table th:first-child { border-radius: 8px 0 0 0; }
+  .branch-table th:last-child { border-radius: 0 8px 0 0; }
+  .branch-table td {
+    padding: 13px 16px; border-bottom: 1px solid #f0f0ea;
+    vertical-align: middle;
+  }
+  .branch-table tr:last-child td { border-bottom: none; }
+  .branch-table tr:hover td { background: var(--gray-light); }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .status-badge.submitted { background: #e8f5e9; color: #2e7d32; }
+  .status-badge.pending { background: #fff8e1; color: #f57f17; }
+  .status-badge::before { content: '●'; font-size: 8px; }
+
+  .num-mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+
+  .branch-name-cell { font-weight: 600; color: var(--green-dark); }
+  .branch-code { font-size: 11px; color: var(--gray); font-family: 'IBM Plex Mono', monospace; }
+
+  /* ─── HISTORY ─── */
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+  .history-item {
+    background: var(--white); border-radius: var(--radius-sm);
+    padding: 16px 20px; box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: all 0.2s;
+    border: 1.5px solid transparent;
+  }
+  .history-item:hover { border-color: var(--green-pale); transform: translateX(3px); }
+  .history-item-left { display: flex; align-items: center; gap: 14px; }
+  .history-week-badge {
+    background: var(--green-dark); color: var(--white);
+    border-radius: 8px; padding: 8px 12px; text-align: center;
+    min-width: 80px;
+  }
+  .history-week-badge .wk { font-size: 11px; color: var(--green-pale); }
+  .history-week-badge .wknum { font-size: 18px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+  .history-meta { font-size: 13px; color: var(--gray); margin-top: 3px; }
+  .history-value { font-size: 20px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: var(--green-dark); }
+  .history-value-label { font-size: 12px; color: var(--gray); text-align: right; }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--gray);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; font-weight: 500; }
+  .empty-sub { font-size: 13px; margin-top: 6px; }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeUp 0.4s ease; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 1000; display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white); border-radius: 16px;
+    padding: 32px; max-width: 600px; width: 90%;
+    box-shadow: var(--shadow-lg); animation: fadeUp 0.3s ease;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--green-dark); margin-bottom: 20px; }
+  .modal-close {
+    float: right; background: none; border: none; font-size: 20px;
+    cursor: pointer; color: var(--gray); margin-top: -4px;
+  }
+  .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0ea; font-size: 14px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: var(--gray); }
+  .detail-value { font-weight: 600; color: var(--text-dark); font-family: 'IBM Plex Mono', monospace; }
+
+  /* ─── SETUP NOTICE ─── */
+  .setup-notice {
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 1.5px solid var(--gold);
+    border-radius: var(--radius); padding: 16px 20px;
+    margin-bottom: 20px; font-size: 13px; color: #7d5a00;
+  }
+  .setup-notice strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .main-content { padding: 16px; }
+    .topbar { padding: 0 16px; }
+    .nav-bar { padding: 0 16px; }
+    .fields-grid { grid-template-columns: 1fr; }
+    .login-box { padding: 32px 24px; }
+    .topbar-page { display: none; }
+  }
+</style>
 </head>
-<body class="text-gray-800 antialiased flex h-screen overflow-hidden">
+<body>
 
-    <!-- Sidebar (แถบเมนูด้านซ้าย) -->
-    <aside class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
-        <div class="p-6 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
-                <i class="ph ph-leaf text-2xl"></i>
+<!-- ═══════════════════ LOGIN SCREEN ═══════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="brand">
+        <div class="logo-icon">🌿</div>
+        <div class="logo-text">B-Green</div>
+      </div>
+      <div class="login-subtitle">ระบบรายงานประจำสัปดาห์</div>
+      <div class="login-title">กรุณาเข้าสู่ระบบ</div>
+    </div>
+    <div class="form-group">
+      <label>ชื่อผู้ใช้</label>
+      <input type="text" id="login-user" placeholder="username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-error" id="login-error">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">🌿 B-Green</div>
+      <div class="topbar-divider"></div>
+      <div class="topbar-page" id="topbar-page">รายงานประจำสัปดาห์</div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">N</div>
+        <span id="user-display"></span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav-bar" id="nav-bar"></div>
+
+  <!-- Content -->
+  <div class="main-content fade-in" id="main-content"></div>
+</div>
+
+<!-- ═══════════════════ DETAIL MODAL ═══════════════════ -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title">รายละเอียดรายงาน</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONFIG — แก้ไข APPS_SCRIPT_URL หลังจากติดตั้ง Google Apps Script
+// ════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMEcMWeOyuZD9exOOLCvtJtl7FY9j6Chx2KQfhntC84lw8P960TJytLPypAUlnC3gMJw/exec';
+
+// ════════════════════════════════════════════════════════
+// USER DATABASE
+// ════════════════════════════════════════════════════════
+const USERS = {
+  'natthareeya': { pass: '12345', role: 'manager', name: 'Natthareeya', branch: null,   branchName: 'ผู้จัดการเขต' },
+  'pongganin':   { pass: '12345', role: 'manager', name: 'Pongganin',   branch: null,   branchName: 'ผู้จัดการเขต' },
+  'sittinan':    { pass: '54321', role: 'branch',  name: 'Sittinan',    branch: 'PKT',  branchName: 'สาขาภูเก็ต' },
+  'narinthorn':  { pass: '54321', role: 'branch',  name: 'Narinthorn',  branch: 'SMI',  branchName: 'สาขาสมุย' },
+  'suthee.p':    { pass: '54321', role: 'branch',  name: 'Suthee P.',   branch: 'KBI',  branchName: 'สาขากระบี่' },
+  'prachya':     { pass: '54321', role: 'branch',  name: 'Prachya',     branch: 'HDY',  branchName: 'สาขาหาดใหญ่' },
+};
+
+const BRANCHES = {
+  'PKT': { name: 'สาขาภูเก็ต',  code: 'PKT', color: '#0ea5e9' },
+  'SMI': { name: 'สาขาสมุย',    code: 'SMI', color: '#8b5cf6' },
+  'KBI': { name: 'สาขากระบี่',  code: 'KBI', color: '#f59e0b' },
+  'HDY': { name: 'สาขาหาดใหญ่', code: 'HDY', color: '#10b981' },
+};
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let currentUser = null;
+let currentTab = 'report';
+let allReports = [];
+
+// ════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  if (USERS[u] && USERS[u].pass === p) {
+    currentUser = { username: u, ...USERS[u] };
+    err.style.display = 'none';
+    showApp();
+  } else {
+    err.style.display = 'block';
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-display').textContent = `${currentUser.name} · ${currentUser.branchName}`;
+  document.getElementById('user-avatar').textContent = currentUser.name[0].toUpperCase();
+
+  buildNav();
+  if (currentUser.role === 'manager') {
+    currentTab = 'dashboard';
+    loadReports();
+  } else {
+    currentTab = 'report';
+    renderTab();
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════
+function buildNav() {
+  const nav = document.getElementById('nav-bar');
+  let tabs = [];
+  if (currentUser.role === 'manager') {
+    tabs = [
+      { id: 'dashboard', label: '📊 ภาพรวม' },
+      { id: 'history',   label: '📋 ประวัติรายงาน' },
+    ];
+  } else {
+    tabs = [
+      { id: 'report',  label: '📝 กรอกรายงาน' },
+      { id: 'history', label: '📋 ประวัติของสาขา' },
+    ];
+  }
+  nav.innerHTML = tabs.map(t =>
+    `<button class="nav-tab ${t.id === currentTab ? 'active' : ''}" onclick="switchTab('${t.id}')">${t.label}</button>`
+  ).join('');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(
+      tab === 'dashboard' ? 'ภาพรวม' : tab === 'history' ? 'ประวัติ' : 'กรอก'
+    ));
+  });
+  renderTab();
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER TABS
+// ════════════════════════════════════════════════════════
+function renderTab() {
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = '';
+  mc.classList.remove('fade-in');
+  void mc.offsetWidth;
+  mc.classList.add('fade-in');
+
+  if (currentTab === 'report') renderReportForm();
+  else if (currentTab === 'dashboard') renderDashboard();
+  else if (currentTab === 'history') renderHistory();
+}
+
+// ════════════════════════════════════════════════════════
+// REPORT FORM (BRANCH VIEW)
+// ════════════════════════════════════════════════════════
+function getWeekRange(dateStr) {
+  const d = new Date(dateStr);
+  const day = d.getDay();
+  const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  return `${fmt(mon)} – ${fmt(sun)}`;
+}
+
+function getWeekNumber(dateStr) {
+  const d = new Date(dateStr);
+  const startOfYear = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+}
+
+function renderReportForm() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('main-content').innerHTML = `
+    <div class="setup-notice" id="setup-notice" style="display:none">
+      ⚠️ <strong>ยังไม่ได้ตั้งค่า Google Apps Script</strong>
+      กรุณาทำตามคู่มือการตั้งค่าก่อน แล้วแก้ไข APPS_SCRIPT_URL ในโค้ด
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📝 กรอกรายงานประจำสัปดาห์</div>
+          <div class="card-subtitle" id="week-label">เลือกสัปดาห์ที่ต้องการรายงาน</div>
+        </div>
+        <div style="background:var(--green-dark);color:var(--white);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600">
+          ${BRANCHES[currentUser.branch]?.name || currentUser.branchName}
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="week-selector">
+          <label>📅 วันในสัปดาห์:</label>
+          <input type="date" id="week-date" value="${today}" onchange="updateWeekLabel()">
+          <span id="week-range-display" style="font-size:13px;color:var(--gray)"></span>
+        </div>
+
+        <div class="section-label">ยอดขาย</div>
+        <div class="fields-grid" style="margin-bottom:20px">
+          <div class="field-item">
+            <label>ยอดขายรวม (บาท)</label>
+            <div class="unit-input">
+              <input type="number" id="f-total-sale" placeholder="0">
+              <span class="unit-label">฿</span>
+            </div>
+          </div>
+          <div class="field-item">
+            <label>จำนวนรถที่ขายได้</label>
+            <div class="unit-input">
+              <input type="number" id="f-units-sold" placeholder="0">
+              <span class="unit-label">คัน</span>
+            </div>
+          </div>
+          <div class="field-item">
+            <label>เป้ายอดขายสัปดาห์ (บาท)</label>
+            <div class="unit-input">
+              <input type="number" id="f-target" placeholder="0">
+              <span class="unit-label">฿</span>
+            </div>
+          </div>
+          <div class="field-item">
+            <label>ยอดสะสมเดือนนี้ (บาท)</label>
+            <div class="unit-input">
+              <input type="number" id="f-monthly-acc" placeholder="0">
+              <span class="unit-label">฿</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">ลูกค้าและโอกาส</div>
+        <div class="fields-grid" style="margin-bottom:20px">
+          <div class="field-item">
+            <label>จำนวนลูกค้าใหม่</label>
+            <div class="unit-input">
+              <input type="number" id="f-new-cust" placeholder="0">
+              <span class="unit-label">ราย</span>
+            </div>
+          </div>
+          <div class="field-item">
+            <label>Leads / ผู้สนใจ</label>
+            <div class="unit-input">
+              <input type="number" id="f-leads" placeholder="0">
+              <span class="unit-label">ราย</span>
+            </div>
+          </div>
+          <div class="field-item">
+            <label>Test Drive / ทดลองขับ</label>
+            <div class="unit-input">
+              <input type="number" id="f-testdrive" placeholder="0">
+              <span class="unit-label">ครั้ง</span>
+            </div>
+          </div>
+          <div class="field-item">
+            <label>ส่งมอบรถ</label>
+            <div class="unit-input">
+              <input type="number" id="f-delivery" placeholder="0">
+              <span class="unit-label">คัน</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">กิจกรรมและหมายเหตุ</div>
+        <div class="fields-grid">
+          <div class="field-item full">
+            <label>กิจกรรมสำคัญสัปดาห์นี้</label>
+            <textarea id="f-activities" placeholder="เช่น เข้าพบลูกค้า / งานแสดงรถ / ติดตามโครงการ..."></textarea>
+          </div>
+          <div class="field-item full">
+            <label>ปัญหา / อุปสรรค</label>
+            <textarea id="f-issues" placeholder="ระบุปัญหาที่พบ (ถ้ามี)"></textarea>
+          </div>
+          <div class="field-item full">
+            <label>แผนสัปดาห์หน้า</label>
+            <textarea id="f-plan" placeholder="แผนงานที่วางไว้..."></textarea>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;display:flex;align-items:center;gap:16px">
+          <button class="btn-submit" id="submit-btn" onclick="submitReport()">
+            <span>📤</span> ส่งรายงาน
+          </button>
+          <button style="padding:13px 20px;background:none;border:1.5px solid #e0e0d8;border-radius:8px;font-family:Sarabun,sans-serif;font-size:14px;cursor:pointer;color:var(--gray)" onclick="clearForm()">ล้างข้อมูล</button>
+        </div>
+        <div class="submit-status" id="submit-status"></div>
+      </div>
+    </div>
+  `;
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    document.getElementById('setup-notice').style.display = 'block';
+  }
+  updateWeekLabel();
+}
+
+function updateWeekLabel() {
+  const d = document.getElementById('week-date')?.value;
+  if (!d) return;
+  document.getElementById('week-label').textContent = `สัปดาห์: ${getWeekRange(d)}`;
+  document.getElementById('week-range-display').textContent = getWeekRange(d);
+}
+
+function clearForm() {
+  ['f-total-sale','f-units-sold','f-target','f-monthly-acc','f-new-cust','f-leads','f-testdrive','f-delivery','f-activities','f-issues','f-plan']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+async function submitReport() {
+  const dateVal = document.getElementById('week-date').value;
+  if (!dateVal) { showStatus('กรุณาเลือกวันที่', 'error'); return; }
+
+  const payload = {
+    action: 'submit',
+    branch: currentUser.branch,
+    branchName: currentUser.branchName,
+    username: currentUser.username,
+    weekDate: dateVal,
+    weekRange: getWeekRange(dateVal),
+    weekNumber: getWeekNumber(dateVal),
+    year: new Date(dateVal).getFullYear(),
+    totalSale: document.getElementById('f-total-sale').value || 0,
+    unitsSold: document.getElementById('f-units-sold').value || 0,
+    target: document.getElementById('f-target').value || 0,
+    monthlyAcc: document.getElementById('f-monthly-acc').value || 0,
+    newCustomers: document.getElementById('f-new-cust').value || 0,
+    leads: document.getElementById('f-leads').value || 0,
+    testDrive: document.getElementById('f-testdrive').value || 0,
+    delivery: document.getElementById('f-delivery').value || 0,
+    activities: document.getElementById('f-activities').value || '',
+    issues: document.getElementById('f-issues').value || '',
+    plan: document.getElementById('f-plan').value || '',
+    submittedAt: new Date().toISOString(),
+  };
+
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    showStatus('⚠️ ยังไม่ได้ตั้งค่า Apps Script URL — กรุณาดูคู่มือการติดตั้ง', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  showStatus('⏳ กำลังส่งข้อมูล...', 'loading');
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      showStatus('✅ ส่งรายงานเรียบร้อยแล้ว! (' + new Date().toLocaleString('th-TH') + ')', 'success');
+      clearForm();
+    } else {
+      showStatus('❌ เกิดข้อผิดพลาด: ' + (data.message || 'unknown'), 'error');
+    }
+  } catch (e) {
+    showStatus('❌ ไม่สามารถเชื่อมต่อได้: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('submit-status');
+  el.textContent = msg;
+  el.className = 'submit-status ' + type;
+  el.style.display = 'block';
+}
+
+// ════════════════════════════════════════════════════════
+// DASHBOARD (MANAGER)
+// ════════════════════════════════════════════════════════
+async function loadReports() {
+  if (APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=getAll`);
+      const data = await res.json();
+      allReports = data.reports || [];
+    } catch (e) { allReports = []; }
+  }
+  renderTab();
+}
+
+function renderDashboard() {
+  // Get latest report per branch
+  const latestByBranch = {};
+  allReports.forEach(r => {
+    if (!latestByBranch[r.branch] || r.submittedAt > latestByBranch[r.branch].submittedAt) {
+      latestByBranch[r.branch] = r;
+    }
+  });
+
+  const totalSale = Object.values(latestByBranch).reduce((s, r) => s + (+r.totalSale || 0), 0);
+  const totalUnits = Object.values(latestByBranch).reduce((s, r) => s + (+r.unitsSold || 0), 0);
+  const submitted = Object.keys(latestByBranch).length;
+
+  document.getElementById('main-content').innerHTML = `
+    ${APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE' ? `
+    <div class="setup-notice">
+      ⚠️ <strong>Demo Mode — ยังไม่ได้เชื่อมต่อ Google Sheets</strong>
+      ข้อมูลด้านล่างเป็นตัวอย่าง กรุณาทำตามคู่มือการตั้งค่าก่อน
+    </div>` : ''}
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="summary-card-label">ยอดขายรวมทุกสาขา</div>
+        <div class="summary-card-value">${totalSale > 0 ? (totalSale/1000000).toFixed(2) : '—'}<span class="summary-card-unit">ล้านบาท</span></div>
+        <div class="summary-card-sub">สัปดาห์ล่าสุดที่รายงาน</div>
+      </div>
+      <div class="summary-card gold">
+        <div class="summary-card-label">จำนวนรถขายได้รวม</div>
+        <div class="summary-card-value">${totalUnits > 0 ? totalUnits : '—'}<span class="summary-card-unit">คัน</span></div>
+        <div class="summary-card-sub">รวมทุกสาขา</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">สาขาที่ส่งรายงานแล้ว</div>
+        <div class="summary-card-value">${submitted}<span class="summary-card-unit">/ 4</span></div>
+        <div class="summary-card-sub">สัปดาห์ล่าสุด</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">สถานะรายงานแต่ละสาขา</div>
+          <div class="card-subtitle">ข้อมูลล่าสุดที่แต่ละสาขาส่งมา</div>
+        </div>
+        <button onclick="loadReports()" style="padding:8px 16px;background:var(--green-dark);color:white;border:none;border-radius:8px;font-family:Sarabun,sans-serif;font-size:13px;cursor:pointer">🔄 รีเฟรช</button>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="branch-table">
+          <thead>
+            <tr>
+              <th>สาขา</th>
+              <th>สัปดาห์ล่าสุด</th>
+              <th>ยอดขาย (฿)</th>
+              <th>รถ (คัน)</th>
+              <th>Leads</th>
+              <th>สถานะ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.values(BRANCHES).map(b => {
+              const r = latestByBranch[b.code];
+              return `<tr>
+                <td>
+                  <div class="branch-name-cell">${b.name}</div>
+                  <div class="branch-code">${b.code}</div>
+                </td>
+                <td class="num-mono">${r ? r.weekRange : '—'}</td>
+                <td class="num-mono">${r ? Number(r.totalSale).toLocaleString() : '—'}</td>
+                <td class="num-mono">${r ? r.unitsSold : '—'}</td>
+                <td class="num-mono">${r ? r.leads : '—'}</td>
+                <td><span class="status-badge ${r ? 'submitted' : 'pending'}">${r ? 'ส่งแล้ว' : 'รอรายงาน'}</span></td>
+                <td>${r ? `<button onclick='showDetail(${JSON.stringify(r)})' style="padding:5px 12px;background:none;border:1.5px solid var(--green-pale);border-radius:6px;font-family:Sarabun,sans-serif;font-size:12px;cursor:pointer;color:var(--green-mid)">ดูละเอียด</button>` : ''}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════════════════
+function renderHistory() {
+  let reports = allReports;
+  if (currentUser.role === 'branch') {
+    reports = reports.filter(r => r.branch === currentUser.branch);
+  }
+  reports = [...reports].sort((a, b) => b.submittedAt?.localeCompare(a.submittedAt));
+
+  if (reports.length === 0) {
+    document.getElementById('main-content').innerHTML = `
+      ${APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE' ? `<div class="setup-notice">⚠️ <strong>ยังไม่ได้เชื่อมต่อ Google Sheets</strong> ประวัติรายงานจะแสดงหลังจากตั้งค่าเสร็จ</div>` : ''}
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">ยังไม่มีรายงาน</div>
+        <div class="empty-sub">รายงานที่ส่งแล้วจะปรากฏที่นี่</div>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="history-list">
+      ${reports.map(r => `
+        <div class="history-item" onclick='showDetail(${JSON.stringify(r)})'>
+          <div class="history-item-left">
+            <div class="history-week-badge">
+              <div class="wk">Week</div>
+              <div class="wknum">${r.weekNumber || '—'}</div>
             </div>
             <div>
-                <h1 class="font-bold text-lg text-gray-900 leading-tight">Beyond Green</h1>
-                <p class="text-xs text-gray-500">Area 7 Workspace</p>
+              <div style="font-weight:600;font-size:14px">${r.branchName || BRANCHES[r.branch]?.name || r.branch}</div>
+              <div class="history-meta">${r.weekRange || r.weekDate} · ส่งโดย ${r.username}</div>
+              <div class="history-meta">${new Date(r.submittedAt).toLocaleString('th-TH')}</div>
             </div>
+          </div>
+          <div style="text-align:right">
+            <div class="history-value">${Number(r.totalSale).toLocaleString()}</div>
+            <div class="history-value-label">บาท · ${r.unitsSold} คัน</div>
+          </div>
         </div>
+      `).join('')}
+    </div>
+  `;
+}
 
-        <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">เมนูหลัก</p>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 bg-brand-50 text-brand-700 rounded-lg font-medium transition-colors">
-                <i class="ph ph-squares-four text-xl"></i>
-                ภาพรวมรายสัปดาห์
-            </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
-                <i class="ph ph-chart-line-up text-xl"></i>
-                รายงานยอดขาย
-            </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
-                <i class="ph ph-users text-xl"></i>
-                ข้อมูลลูกค้า
-            </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
-                <i class="ph ph-map-pin text-xl"></i>
-                สาขาใน Area 7
-            </a>
-        </nav>
+// ════════════════════════════════════════════════════════
+// DETAIL MODAL
+// ════════════════════════════════════════════════════════
+function showDetail(r) {
+  document.getElementById('modal-title').textContent =
+    `${r.branchName || BRANCHES[r.branch]?.name} — ${r.weekRange || r.weekDate}`;
+  document.getElementById('modal-body').innerHTML = `
+    ${[
+      ['สาขา', r.branchName || BRANCHES[r.branch]?.name],
+      ['สัปดาห์', r.weekRange],
+      ['ยอดขายรวม', Number(r.totalSale).toLocaleString() + ' บาท'],
+      ['จำนวนรถที่ขาย', r.unitsSold + ' คัน'],
+      ['เป้าสัปดาห์', Number(r.target).toLocaleString() + ' บาท'],
+      ['ยอดสะสมเดือน', Number(r.monthlyAcc).toLocaleString() + ' บาท'],
+      ['ลูกค้าใหม่', r.newCustomers + ' ราย'],
+      ['Leads', r.leads + ' ราย'],
+      ['Test Drive', r.testDrive + ' ครั้ง'],
+      ['ส่งมอบรถ', r.delivery + ' คัน'],
+      ['กิจกรรม', r.activities || '—'],
+      ['ปัญหา', r.issues || '—'],
+      ['แผนสัปดาห์หน้า', r.plan || '—'],
+      ['ส่งโดย', r.username],
+      ['เวลาที่ส่ง', new Date(r.submittedAt).toLocaleString('th-TH')],
+    ].map(([k, v]) => `<div class="detail-row"><span class="detail-label">${k}</span><span class="detail-value">${v}</span></div>`).join('')}
+  `;
+  document.getElementById('detail-modal').classList.add('open');
+}
 
-        <div class="p-4 border-t border-gray-200">
-            <div class="flex items-center gap-3">
-                <img src="https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff" alt="Profile" class="w-10 h-10 rounded-full">
-                <div>
-                    <p class="text-sm font-semibold">ผู้ดูแลระบบ</p>
-                    <p class="text-xs text-gray-500">Area 7 Manager</p>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-screen overflow-hidden">
-        <!-- Topbar สำหรับมือถือ และปุ่มอื่นๆ -->
-        <header class="bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-            <div class="flex items-center gap-3 md:hidden">
-                <button class="text-gray-500 hover:text-brand-600"><i class="ph ph-list text-2xl"></i></button>
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white">
-                    <i class="ph ph-leaf text-xl"></i>
-                </div>
-            </div>
-            <div>
-                <h2 class="text-xl font-bold text-gray-800" id="report-title">รายงานประจำสัปดาห์</h2>
-                <p class="text-sm text-gray-500" id="report-date">กำลังโหลด...</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-brand-50 hover:text-brand-600 transition-colors relative">
-                    <i class="ph ph-bell text-xl"></i>
-                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
-            </div>
-        </header>
-
-        <!-- พื้นที่เนื้อหาที่เลื่อนได้ -->
-        <div class="flex-1 overflow-y-auto p-4 md:p-8">
-            <div class="max-w-7xl mx-auto space-y-6">
-                
-                <!-- KPI Cards (บัตรตัวเลขสรุป) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    <!-- Card 1 -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-gray-500 mb-1">ยอดขายรวมสุทธิ</p>
-                                <h3 class="text-2xl font-bold text-gray-900" id="kpi-sales">฿0</h3>
-                            </div>
-                            <div class="text-brand-500 icon-bg-glow">
-                                <i class="ph ph-coins text-3xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center text-sm">
-                            <span class="text-brand-600 font-medium flex items-center" id="kpi-sales-growth">
-                                <i class="ph ph-trend-up mr-1"></i> +0%
-                            </span>
-                            <span class="text-gray-400 ml-2">เทียบกับสัปดาห์ก่อน</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 2 -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-gray-500 mb-1">ลูกค้าใหม่</p>
-                                <h3 class="text-2xl font-bold text-gray-900" id="kpi-customers">0</h3>
-                            </div>
-                            <div class="text-blue-500 icon-bg-glow">
-                                <i class="ph ph-users-three text-3xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center text-sm">
-                            <span class="text-blue-600 font-medium flex items-center" id="kpi-customers-growth">
-                                <i class="ph ph-trend-up mr-1"></i> +0%
-                            </span>
-                            <span class="text-gray-400 ml-2">เทียบกับสัปดาห์ก่อน</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 3 -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-gray-500 mb-1">ปัญหาที่แก้ไขแล้ว</p>
-                                <h3 class="text-2xl font-bold text-gray-900" id="kpi-issues">0</h3>
-                            </div>
-                            <div class="text-orange-500 icon-bg-glow">
-                                <i class="ph ph-wrench text-3xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center text-sm">
-                            <span class="text-gray-500">เคลียร์ครบ 100% ใน 4 สาขา</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 4 -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-gray-500 mb-1">ความพึงพอใจ</p>
-                                <h3 class="text-2xl font-bold text-gray-900" id="kpi-satisfaction">0%</h3>
-                            </div>
-                            <div class="text-yellow-500 icon-bg-glow">
-                                <i class="ph ph-star text-3xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center text-sm">
-                            <div class="w-full bg-gray-200 rounded-full h-1.5 mr-2">
-                                <div class="bg-yellow-400 h-1.5 rounded-full" id="kpi-satisfaction-bar" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Area Chart -->
-                    <div class="glass-card rounded-2xl p-6 lg:col-span-2">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-800">แนวโน้มยอดขายรายวัน (สัปดาห์นี้)</h3>
-                            <button class="text-gray-400 hover:text-brand-600"><i class="ph ph-dots-three text-2xl"></i></button>
-                        </div>
-                        <div class="h-64">
-                            <canvas id="salesChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Doughnut Chart -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-800">สัดส่วนรายได้ตามประเภท</h3>
-                            <button class="text-gray-400 hover:text-brand-600"><i class="ph ph-dots-three text-2xl"></i></button>
-                        </div>
-                        <div class="h-64 flex items-center justify-center relative">
-                            <canvas id="typeChart"></canvas>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-2">
-                                <p class="text-xs text-gray-500">รวม</p>
-                                <p class="text-lg font-bold text-gray-800" id="chart-donut-total">0</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Table Section -->
-                <div class="glass-card rounded-2xl p-6 mb-8">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-gray-800">รายงานแยกตามสาขา</h3>
-                        <button class="flex items-center gap-2 px-4 py-2 bg-brand-50 text-brand-700 text-sm font-medium rounded-lg hover:bg-brand-100 transition-colors">
-                            <i class="ph ph-download-simple"></i> ส่งออกข้อมูล
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="text-sm text-gray-500 border-b border-gray-100">
-                                    <th class="pb-3 font-medium px-4">ชื่อสาขา</th>
-                                    <th class="pb-3 font-medium px-4">หัวหน้าสาขา</th>
-                                    <th class="pb-3 font-medium px-4 text-right">ยอดขาย (บาท)</th>
-                                    <th class="pb-3 font-medium px-4 text-center">สถานะเป้าหมาย</th>
-                                    <th class="pb-3 font-medium px-4 text-center">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="branch-table-body" class="text-sm">
-                                <!-- ข้อมูลจาก JavaScript จะถูกนำมาใส่ที่นี่ -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Footer -->
-                <div class="text-center text-gray-400 text-xs pb-6">
-                    &copy; 2026 Beyond Green Area 7. All rights reserved.
-                </div>
-
-            </div>
-        </div>
-    </main>
-
-    <!-- ========================================== -->
-    <!-- 📝 พื้นที่สำหรับอัปเดตข้อมูล (แก้ไขตรงนี้ได้เลย) 📝 -->
-    <!-- ========================================== -->
-    <script>
-        // เปลี่ยนข้อมูลในบล็อก REPORT_DATA นี้ ข้อมูลบนหน้าเว็บจะเปลี่ยนตามทั้งหมด
-        const REPORT_DATA = {
-            
-            // 1. หัวข้อและวันที่
-            title: "รายงานประจำสัปดาห์ (สัปดาห์ที่ 2 เดือนพฤษภาคม)",
-            dateRange: "วันที่ 4 - 10 พฤษภาคม 2026",
-
-            // 2. ข้อมูลบัตรสรุป (KPIs)
-            summary: {
-                totalSales: "฿1,452,000",       // ยอดขายรวม
-                salesGrowth: "+12.5%",          // อัตราเติบโตเทียบสัปดาห์ก่อน (+ หรือ -)
-                newCustomers: "184",            // ลูกค้าใหม่
-                customersGrowth: "+5.2%",       // การเติบโตลูกค้าใหม่
-                issuesResolved: "42",           // ปัญหาที่แก้แล้ว
-                satisfactionScore: "96"         // ความพึงพอใจ (ตัวเลข 0-100)
-            },
-
-            // 3. ข้อมูลกราฟเส้น (ยอดขายรายวัน จันทร์-อาทิตย์)
-            chartLineData: [150000, 210000, 180000, 250000, 220000, 290000, 152000],
-
-            // 4. ข้อมูลกราฟโดนัท (สัดส่วนรายได้ เช่น รถใหม่, อะไหล่, บริการ)
-            chartDonutData: [850000, 400000, 202000], 
-            chartDonutLabels: ["ยอดขายรถใหม่", "งานบริการซ่อม", "ขายอะไหล่"],
-
-            // 5. ข้อมูลตารางแยกตามสาขา (เพิ่มบรรทัดใหม่ได้ถ้ามีสาขาเพิ่ม)
-            branches: [
-                {
-                    name: "สาขาภูเก็ต",
-                    manager: "คุณสมศักดิ์ รักดี",
-                    managerEmail: "somsak@beyondgreen.co.th",
-                    sales: "450,000",
-                    status: "ยอดเยี่ยม" // เลือกได้: "ยอดเยี่ยม", "ตามเป้า", "ต้องปรับปรุง"
-                },
-                {
-                    name: "สาขาหาดใหญ่",
-                    manager: "คุณวิภาดา แสงทอง",
-                    managerEmail: "wipada@beyondgreen.co.th",
-                    sales: "380,000",
-                    status: "ตามเป้า"
-                },
-                {
-                    name: "สาขาสุราษฎร์ธานี",
-                    manager: "คุณณรงค์เดช นำชัย",
-                    managerEmail: "narong@beyondgreen.co.th",
-                    sales: "210,000",
-                    status: "ต้องปรับปรุง"
-                },
-                {
-                    name: "สาขากระบี่",
-                    manager: "คุณพนิดา สุขสบาย",
-                    managerEmail: "panida@beyondgreen.co.th",
-                    sales: "412,000",
-                    status: "ยอดเยี่ยม"
-                }
-            ]
-        };
-
-        // ==========================================
-        // ⚙️ โค้ดระบบการทำงาน (ไม่ต้องแก้ไขส่วนด้านล่างนี้) ⚙️
-        // ==========================================
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            // โหลดข้อมูลใส่ DOM
-            document.getElementById('report-title').innerText = REPORT_DATA.title;
-            document.getElementById('report-date').innerText = REPORT_DATA.dateRange;
-
-            document.getElementById('kpi-sales').innerText = REPORT_DATA.summary.totalSales;
-            document.getElementById('kpi-sales-growth').innerHTML = `<i class="ph ph-trend-up mr-1"></i> ${REPORT_DATA.summary.salesGrowth}`;
-            
-            document.getElementById('kpi-customers').innerText = REPORT_DATA.summary.newCustomers;
-            document.getElementById('kpi-customers-growth').innerHTML = `<i class="ph ph-trend-up mr-1"></i> ${REPORT_DATA.summary.customersGrowth}`;
-            
-            document.getElementById('kpi-issues').innerText = REPORT_DATA.summary.issuesResolved;
-            
-            document.getElementById('kpi-satisfaction').innerText = `${REPORT_DATA.summary.satisfactionScore}%`;
-            document.getElementById('kpi-satisfaction-bar').style.width = `${REPORT_DATA.summary.satisfactionScore}%`;
-
-            // สร้างตาราง
-            const tableBody = document.getElementById('branch-table-body');
-            tableBody.innerHTML = ''; // เคลียร์ของเก่า
-            
-            REPORT_DATA.branches.forEach(branch => {
-                // กำหนดสีสถานะ
-                let statusBadge = '';
-                if(branch.status === 'ยอดเยี่ยม') {
-                    statusBadge = '<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-700">ยอดเยี่ยม</span>';
-                } else if(branch.status === 'ตามเป้า') {
-                    statusBadge = '<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">ตามเป้า</span>';
-                } else {
-                    statusBadge = '<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">ต้องปรับปรุง</span>';
-                }
-
-                const row = `
-                    <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                        <td class="py-4 px-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
-                                    <i class="ph ph-storefront"></i>
-                                </div>
-                                <span class="font-medium text-gray-800">${branch.name}</span>
-                            </div>
-                        </td>
-                        <td class="py-4 px-4">
-                            <div>
-                                <p class="text-gray-800">${branch.manager}</p>
-                                <p class="text-xs text-gray-400">${branch.managerEmail}</p>
-                            </div>
-                        </td>
-                        <td class="py-4 px-4 text-right font-medium text-gray-900">฿${branch.sales}</td>
-                        <td class="py-4 px-4 text-center">${statusBadge}</td>
-                        <td class="py-4 px-4 text-center">
-                            <button class="text-gray-400 hover:text-brand-600 p-1"><i class="ph ph-pencil-simple text-lg"></i></button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-
-            // ตั้งค่า Chart.js (กราฟเส้น)
-            const ctxSales = document.getElementById('salesChart').getContext('2d');
-            const gradientLine = ctxSales.createLinearGradient(0, 0, 0, 400);
-            gradientLine.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); // brand-500 โปร่งใส
-            gradientLine.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
-
-            new Chart(ctxSales, {
-                type: 'line',
-                data: {
-                    labels: ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'],
-                    datasets: [{
-                        label: 'ยอดขาย (บาท)',
-                        data: REPORT_DATA.chartLineData,
-                        borderColor: '#10b981', // brand-500
-                        backgroundColor: gradientLine,
-                        borderWidth: 2,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#10b981',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        fill: true,
-                        tension: 0.4 // ทำให้เส้นโค้งสวยงาม
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            grid: { color: '#f3f4f6', drawBorder: false },
-                            ticks: { 
-                                callback: function(value) { return '฿' + (value/1000) + 'k'; },
-                                color: '#9ca3af',
-                                font: { family: 'Prompt' }
-                            }
-                        },
-                        x: { 
-                            grid: { display: false, drawBorder: false },
-                            ticks: { color: '#9ca3af', font: { family: 'Prompt' } }
-                        }
-                    }
-                }
-            });
-
-            // ตั้งค่า Chart.js (กราฟโดนัท)
-            const ctxType = document.getElementById('typeChart').getContext('2d');
-            
-            // หาผลรวมเพื่อใส่ตรงกลางโดนัท
-            const sumDonut = REPORT_DATA.chartDonutData.reduce((a, b) => a + b, 0);
-            document.getElementById('chart-donut-total').innerText = '฿' + (sumDonut/1000000).toFixed(1) + 'M';
-
-            new Chart(ctxType, {
-                type: 'doughnut',
-                data: {
-                    labels: REPORT_DATA.chartDonutLabels,
-                    datasets: [{
-                        data: REPORT_DATA.chartDonutData,
-                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%', // ขนาดรูตรงกลาง
-                    plugins: {
-                        legend: { 
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: { family: 'Prompt' },
-                                color: '#6b7280'
-                            }
-                        }
-                    }
-                }
-            });
-        });
-    </script>
+function closeModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
+document.getElementById('detail-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
 </body>
 </html>
