@@ -126,7 +126,8 @@
     box-shadow: 0 2px 12px rgba(0,0,0,0.2);
   }
   .topbar-left { display: flex; align-items: center; gap: 12px; }
-  .topbar-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .topbar-logo img { height: 36px; display: block; border-radius: 6px; }
+  .login-logo img { border-radius: 8px; }
   .topbar-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.2); }
   .topbar-page { font-size: 14px; color: var(--green-pale); font-weight: 500; }
   .topbar-right { display: flex; align-items: center; gap: 16px; }
@@ -391,8 +392,7 @@
   <div class="login-box">
     <div class="login-logo">
       <div class="brand">
-        <div class="logo-icon">🌿</div>
-        <div class="logo-text">B-Green</div>
+        <img src="Beyond_Green_Logo_Stroke.png" alt="Beyond Green" style="height:60px;border-radius:8px;background:#000;padding:6px 12px">
       </div>
       <div class="login-subtitle">ระบบรายงานประจำสัปดาห์</div>
       <div class="login-title">กรุณาเข้าสู่ระบบ</div>
@@ -415,7 +415,7 @@
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-logo">🌿 B-Green</div>
+      <div class="topbar-logo"><img src="Beyond_Green_Logo_Stroke.png" alt="Beyond Green" style="background:#000;border-radius:6px;padding:3px 8px"></div>
       <div class="topbar-divider"></div>
       <div class="topbar-page" id="topbar-page">รายงานประจำสัปดาห์</div>
     </div>
@@ -448,7 +448,7 @@
 // ════════════════════════════════════════════════════════
 // CONFIG — แก้ไข APPS_SCRIPT_URL หลังจากติดตั้ง Google Apps Script
 // ════════════════════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMEcMWeOyuZD9exOOLCvtJtl7FY9j6Chx2KQfhntC84lw8P960TJytLPypAUlnC3gMJw/exec';
+const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
 
 // ════════════════════════════════════════════════════════
 // USER DATABASE
